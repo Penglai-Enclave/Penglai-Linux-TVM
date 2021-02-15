@@ -17,18 +17,12 @@ EXPORT_SYMBOL(PGD_PAGE_ORDER);
 EXPORT_SYMBOL(PMD_PAGE_ORDER);
 EXPORT_SYMBOL(alloc_pt_pte_page);
 
-//uintptr_t enclave_module_installed = 0;
-//EXPORT_SYMBOL(enclave_module_installed);
-// extern int enclave_module_installed;
 extern unsigned long _totalram_pages;
 
 struct pt_page_list{
-  //struct pt_page_list *prev_page;
   struct pt_page_list *next_page;
 };
 
-//struct pt_page_list *pt_page_list = NULL;
-//struct pt_page_list *pt_free_list = NULL;
 struct pt_page_list *pt_pgd_page_list = NULL;
 struct pt_page_list *pt_pgd_free_list = NULL;
 struct pt_page_list *pt_pmd_page_list = NULL;
@@ -133,7 +127,6 @@ char* alloc_pt_pgd_page()
   pt_pgd_free_list = pt_pgd_free_list->next_page;
   pt_free_pages -= 1;
 
-  //printk("alloc_pt_page: va 0x%lx, pa 0x%lx, 0x%lx/0x%lx pt pages left!\n", free_page, __pa(free_page), pt_free_pages, pt_area_pages);
   spin_unlock(&pt_lock);
   if(enclave_module_installed)
   {
@@ -196,7 +189,6 @@ char* alloc_pt_pte_page()
   {
     memset(free_page, 0, PAGE_SIZE);
   }
-  // printk("alloc_pt_pte_page: free_page %lx\n",free_page);
   return free_page;
 }
 
