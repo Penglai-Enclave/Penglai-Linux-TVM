@@ -353,8 +353,9 @@ void free_pages_and_swap_cache(struct page **pages, int nr)
 	for (i = 0; i < nr; i++)
 		free_swap_cache(pagep[i]);
 	#ifdef CONFIG_PT_AREA
+		// Remove the release_page, explicitly free the pte page in the free_pte_range()
 	#else
-	release_pages(pagep, nr);
+		release_pages(pagep, nr);
 	#endif
 }
 

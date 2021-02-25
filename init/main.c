@@ -844,74 +844,10 @@ static void __init mm_init(void)
 }
 
 #ifdef CONFIG_PT_AREA
-static void print_pt(pte_t* src_pt, pte_t* dest_pt, unsigned long level)
-{
-  unsigned long i=0;
-  for(i=0;i<PTRS_PER_PTE;++i)
-  {
-    unsigned long src_pte=src_pt[i].pte, dest_pte=dest_pt[i].pte;
-    if(src_pte & _PAGE_PRESENT)
-    {
-      if(!((src_pte & _PAGE_READ) || (src_pte & _PAGE_EXEC)))
-      {
-        pte_t* new_src_pte=(pte_t*)pfn_to_virt(src_pte>>_PAGE_PFN_SHIFT);
-        pte_t* new_dest_pte=(pte_t*)pfn_to_virt(dest_pte>>_PAGE_PFN_SHIFT);
-        switch(level)
-        {
-          case 0:
-            printk("level%ld: src_pte is 0x%lx, dest_pte is 0x%lx, n_src_pt is 0x%lx, n_dest_pt is 0x%lx\n",level, src_pte, dest_pte, (unsigned long)new_src_pte, (unsigned long)new_dest_pte);
-            break;
-          case 1:
-            printk("--level%ld: src_pte is 0x%lx, dest_pte is 0x%lx, n_src_pt is 0x%lx, n_dest_pt is 0x%lx\n",level, src_pte, dest_pte, (unsigned long)new_src_pte, (unsigned long)new_dest_pte);
-            break;
-          case 2:
-            printk("----level%ld: src_pte is 0x%lx, dest_pte is 0x%lx, n_src_pt is 0x%lx, n_dest_pt is 0x%lx\n",level, src_pte, dest_pte, (unsigned long)new_src_pte, (unsigned long)new_dest_pte);
-            break;
-          case 3:
-            printk("------level%ld: src_pte is 0x%lx, dest_pte is 0x%lx, n_src_pt is 0x%lx, n_dest_pt is 0x%lx\n",level, src_pte, dest_pte, (unsigned long)new_src_pte, (unsigned long)new_dest_pte);
-            break;
-          default:
-            break;
-        }
-        print_pt(new_src_pte, new_dest_pte,level+1);
-      }
-      else
-      {
-        if(src_pte!=dest_pte)
-        {
-          printk("ERROR: src_pte0x%lx != dest_pte0x%lx\n",src_pte,dest_pte);
-          while(1){}
-        }
-        if(i==0 || i==250 || i==500 || i==750 || i==1000)
-        {
-        switch(level)
-        {
-          case 0:
-            printk("level%ld: src_pte is 0x%lx, dest_pte is 0x%lx\n",level, src_pte, dest_pte);
-            break;
-          case 1:
-            printk("--level%ld: src_pte is 0x%lx, dest_pte is 0x%lx\n",level, src_pte, dest_pte);
-            break;
-          case 2:
-            printk("----level%ld: src_pte is 0x%lx, dest_pte is 0x%lx\n",level, src_pte, dest_pte);
-            break;
-          case 3:
-            printk("------level%ld: src_pte is 0x%lx, dest_pte is 0x%lx\n",level, src_pte, dest_pte);
-            break;
-          default:
-            break;
-        }
-        }
-      }
-    }
-  }
-}
-
 static void deep_copy_pt(pte_t* src_pt, pte_t* dest_pt, int level)
 {
   unsigned long i=0;
   int tmpLevel = level;
-//   printk("deep_copy_pt: level %d\n", level);
   for(i=0;i<PTRS_PER_PGD;++i)
   {
     unsigned long pte=src_pt[i].pte;
@@ -920,23 +856,19 @@ static void deep_copy_pt(pte_t* src_pt, pte_t* dest_pt, int level)
       if((pte & _PAGE_READ) || (pte & _PAGE_EXEC))
       {
         //Find a leaf PTE
-		// printk("find leaf pte \n");
         dest_pt[i]=__pte(pte);
       }
       else
       {
         pte_t* new_dest_pt;
         pte_t* new_src_pt;
-	// printk("level is %d\n", tmpLevel);
-	if (tmpLevel == 0){
-		// printk("level == 0\n");
-		new_dest_pt=(pte_t*)alloc_pt_pmd_page();
-	}
-	else{
-		// printk("level == 1\n");
-		new_dest_pt=(pte_t*)alloc_pt_pte_page();
-	}
-	new_src_pt=(pte_t*)pfn_to_virt(pte>>_PAGE_PFN_SHIFT);
+		if (tmpLevel == 0){
+			new_dest_pt=(pte_t*)alloc_pt_pmd_page();
+		}
+		else{
+			new_dest_pt=(pte_t*)alloc_pt_pte_page();
+		}
+		new_src_pt=(pte_t*)pfn_to_virt(pte>>_PAGE_PFN_SHIFT);
         deep_copy_pt(new_src_pt, new_dest_pt,level+1);
         src_pt[i]=pfn_pte(PFN_DOWN(__pa(new_dest_pt)), __pgprot(pte & 0x3FF));
         dest_pt[i]=pfn_pte(PFN_DOWN(__pa(new_dest_pt)), __pgprot(pte & 0x3FF));
@@ -956,8 +888,7 @@ static void transfer_init_pt(void)
 {
   pte_t* new_swapper_pt;
   unsigned long i=0;
-
-  printk("Transfer init page table to PT area\n");
+  pr_notice("Transfer init table\n");
 #ifndef __PAGETABLE_PMD_FOLDED
   BUG_ON((PTRS_PER_PGD != PTRS_PER_PTE) || (PTRS_PER_PTE != PTRS_PER_PMD));
 #else
@@ -965,19 +896,16 @@ static void transfer_init_pt(void)
 #endif
 
   //Actually here should be pgd_t or pmd_t or pte_t, just for simplicity
-  printk("Transfer init table: begin alloc pt pgd page\n");
   new_swapper_pt=(pte_t*)alloc_pt_pgd_page();
   new_swapper_pg_dir=(void*)__pa(new_swapper_pt);
-  printk("Transfer init table: end alloc pt pgd page\n");
   deep_copy_pt((pte_t*)swapper_pg_dir, new_swapper_pt,0);
-  printk("Transfer init table: end deep copy pt\n");
   mb();
 
-  printk("before: sptbr is 0x%lx, init_mm.pgd is 0x%lx\n",csr_read(sptbr),(unsigned long)init_mm.pgd);
+  pr_notice("Before transfer init table: sptbr is 0x%lx, init_mm.pgd is 0x%lx\n",csr_read(sptbr),(unsigned long)init_mm.pgd);
   init_mm.pgd=(pgd_t*)new_swapper_pt;
   csr_write(sptbr, virt_to_pfn(new_swapper_pt) | SATP_MODE);
   local_flush_tlb_all();
-  printk("after: sptbr is 0x%lx, init_mm.pgd is 0x%lx\n",csr_read(sptbr),(unsigned long)init_mm.pgd);
+  pr_notice("After transfer init table: sptbr is 0x%lx, init_mm.pgd is 0x%lx\n",csr_read(sptbr),(unsigned long)init_mm.pgd);
   
   //clear swapper_pg_dir
   for(i=0;i<PTRS_PER_PGD;++i)
@@ -985,15 +913,6 @@ static void transfer_init_pt(void)
     swapper_pg_dir[i].pgd=0;
   }
   enclave_module_installed = 1;
-
-//   unsigned long bitmap = __get_free_pages(GFP_KERNEL, 9);
-//   unsigned long bitmap_pages = 1 << 9;
-//   //broadcast to other harts
-//   printk("pt_area_vaddr %lx, pa %lx, pt_area_pages %lx\n", pt_area_vaddr, __pa(pt_area_vaddr), pt_area_pages << 12);
-//   SBI_PENGLAI_ECALL_4(100, __pa(pt_area_vaddr), pt_area_pages << 12,
-//       __pa(bitmap), bitmap_pages << 12);
-// //   *(long *)(0xffffffe005ddbff8) = 1;
-//   printk("bug now!\n");
 }
 
 #endif /* CONFIG_PT_AREA */

@@ -52,7 +52,6 @@ static inline int pud_leaf(pud_t pud)
 }
 
 #ifdef CONFIG_PT_AREA
-//#define enclave_module_installed (csr_read(0x150)<csr_read(0x151))&&(csr_read(0x150)!=0)
 extern int enclave_module_installed;
 #define SBI_SM_SET_PTE 101
 #define SBI_SET_PTE_ONE 1
@@ -63,7 +62,6 @@ static void set_pud(pud_t *pudp, pud_t pud)
 {
   if(enclave_module_installed)
   {
-    //printk("set_pud\n");
     SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_ONE, __pa(pudp), pud.p4d.pgd.pgd, 0);
   }
   else

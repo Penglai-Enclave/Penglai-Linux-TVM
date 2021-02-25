@@ -3,8 +3,8 @@
 #include <linux/gfp.h>
 #include <linux/pt_area.h>
 
-int PGD_PAGE_ORDER=8;
-int PMD_PAGE_ORDER=10;
+int PGD_PAGE_ORDER=DEFAULT_PGD_PAGE_ORDER;
+int PMD_PAGE_ORDER=DEFAULT_PMD_PAGE_ORDER;
 int PTE_PAGE_NUM;
 
 char *pt_area_vaddr;
@@ -46,11 +46,8 @@ void init_pt_area()
   //page: computing the number of the page table page 
   unsigned long pages = (_totalram_pages % PTRS_PER_PTE) ? (_totalram_pages/PTRS_PER_PTE + 1) : (_totalram_pages/PTRS_PER_PTE);
   unsigned long order = ilog2(pages - 1) + 4;
-  // unsigned long order = 14;
 
   unsigned long i = 0;
-
-  printk("total page order is%ld\n", order);
   //align with the page size
   pt_area_pages = 1 << order;
   PTE_PAGE_NUM = pt_area_pages - (1<<PGD_PAGE_ORDER) - (1<<PMD_PAGE_ORDER);
@@ -60,7 +57,7 @@ void init_pt_area()
   pt_area_vaddr = (void*)__get_free_pages(GFP_KERNEL, order);
   if(pt_area_vaddr == NULL)
   {
-    printk("ERROR: init_pt_area: alloc pages for pt area failed!\n");
+    panic("ERROR: init_pt_area: alloc pages for pt area failed!\n");
     while(1){}
   }
   //pages: computing the size of te page metadata space
@@ -73,7 +70,7 @@ void init_pt_area()
   pt_pte_page_list = (struct pt_page_list* )__get_free_pages(GFP_KERNEL, order);
   if((pt_pgd_page_list == NULL) || (pt_pmd_page_list == NULL) || (pt_pte_page_list == NULL))
   {
-    printk("ERROR: init_pt_area: alloc pages for pt_pgd_pmd_pte_page_list failed!\n");
+    panic("ERROR: init_pt_area: alloc pages for pt_pgd_pmd_pte_page_list failed!\n");
     while(1){}
   }
   spin_lock_init(&pt_lock);
@@ -117,7 +114,7 @@ char* alloc_pt_pgd_page()
   spin_lock(&pt_lock);
 
   if(pt_pgd_free_list == NULL){
-    printk("PANIC: there is no free page in PT area for pgd!\n");
+    panic("PANIC: there is no free page in PT area for pgd!\n");
     while(1){}
   }
 
@@ -145,7 +142,7 @@ char* alloc_pt_pmd_page()
   char* free_page;
   spin_lock(&pt_lock);
   if(pt_pmd_free_list == NULL){
-    printk("PANIC: there is no free page in PT area for pmd!\n");
+    panic("PANIC: there is no free page in PT area for pmd!\n");
     while(1){}
   }
   pt_page_num = (pt_pmd_free_list - pt_pmd_page_list);
@@ -172,7 +169,7 @@ char* alloc_pt_pte_page()
   spin_lock(&pt_lock);
 
   if(pt_pte_free_list == NULL){
-    printk("PANIC: there is no free page in PT area for pte!\n");
+    panic("PANIC: there is no free page in PT area for pte!\n");
     while(1){}
   }
   pt_page_num = (pt_pte_free_list - pt_pte_page_list);
@@ -203,13 +200,13 @@ int free_pt_pgd_page(unsigned long page)
   unsigned long pt_page_num;
 
   if(((unsigned long)page % PAGE_SIZE)!=0){
-    printk("ERROR: free_pt_page: page is not PAGE_SIZE aligned!\n");
+    pr_warn("ERROR: free_pt_pgd_page: page is not PAGE_SIZE aligned!\n");
     return -1; 
   }
   pt_page_num = ((char*)page - pt_area_vaddr) / PAGE_SIZE;
   if(pt_page_num >= pt_area_pages)
   {
-    printk("ERROR: free_pt_page: page is not in pt_area!\n");
+    pr_warn("ERROR: free_pt_pgd_page: page is not in pt_area!\n");
     return -1;
   }
 
@@ -228,13 +225,13 @@ int free_pt_pmd_page(unsigned long page)
   unsigned long pt_page_num;
 
   if(((unsigned long)page % PAGE_SIZE)!=0){
-    printk("ERROR: free_pt_page: page is not PAGE_SIZE aligned!\n");
+    pr_warn("ERROR: free_pt_pmd_page: page is not PAGE_SIZE aligned!\n");
     return -1; 
   }
   pt_page_num = (((char*)page - pt_area_vaddr) / PAGE_SIZE) - (1<<PGD_PAGE_ORDER);
   if(pt_page_num >= pt_area_pages)
   {
-    printk("ERROR: free_pt_page: page is not in pt_area!\n");
+    pr_warn("ERROR: free_pt_pmd_page: page is not in pt_area!\n");
     return -1;
   }
 
@@ -251,15 +248,14 @@ int free_pt_pmd_page(unsigned long page)
 int free_pt_pte_page(unsigned long page)
 {
   unsigned long pt_page_num;
-  // printk("free_pt_pte_page: free_page %lx\n",page);
   if(((unsigned long)page % PAGE_SIZE)!=0){
-    printk("ERROR: free_pt_page: page is not PAGE_SIZE aligned!\n");
+    pr_warn("ERROR: free_pt_pte_page: page is not PAGE_SIZE aligned!\n");
     return -1; 
   }
   pt_page_num = (((char*)page - pt_area_vaddr) / PAGE_SIZE) - (1<<PGD_PAGE_ORDER) - (1<<PMD_PAGE_ORDER);
   if(pt_page_num >= pt_area_pages)
   {
-    printk("ERROR: free_pt_page: page is not in pt_area!\n");
+    pr_warn("ERROR: free_pt_pte_page: page is not in pt_area!\n");
     return -1;
   }
 

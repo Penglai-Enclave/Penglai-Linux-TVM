@@ -16,7 +16,6 @@
 
 static inline pte_t *__pte_alloc_one_kernel(struct mm_struct *mm)
 {
-	// return (pte_t *)__get_free_page(GFP_PGTABLE_KERNEL);
 	pte_t* pte;
 	pte = (pte_t*) alloc_pt_pte_page();
 	return pte;
@@ -34,7 +33,6 @@ static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm)
 
 static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
 {
-	// free_page((unsigned long)pte);
 	free_pt_pte_page((unsigned long)pte);
 }
 
@@ -42,21 +40,13 @@ static inline pgtable_t __pte_alloc_one(struct mm_struct *mm, gfp_t gfp)
 {
 	struct page *pte;
 
-	// pte = alloc_page(gfp);
 	pte = virt_to_page((void*)(alloc_pt_pte_page()));
-	// page_ref_inc(pte);
-	set_page_count(pte, 2);
-	// printk("----------ALLOC PTE: PAGE REF: %lx address %lx----------\n", atomic_read(&pte->_refcount), page_address(pte));
 	if (!pte)
 		return NULL;
 	if (!pgtable_pte_page_ctor(pte)) {
-		printk("----------ALLOC PTE: failed----------\n");
-		set_page_count(pte, 0);
 		free_pt_pte_page((unsigned long)(page_address(pte)));
-		// __free_page(pte);
 		return NULL;
 	}
-	// printk("alloc pte addr %lx\n", page_address(pte));
 	return pte;
 }
 
@@ -71,12 +61,7 @@ static inline void pte_free(struct mm_struct *mm, struct page *pte_page)
 {
 	pgtable_pte_page_dtor(pte_page);
 	*(unsigned long *)&pte_page->ptl = 0;
-	VM_BUG_ON_PAGE(*(unsigned long *)&pte_page->ptl, pte_page);
-	// __free_page(pte_page);
-	// printk("----------FREE PTE: PAGE address %lx----------\n", page_address(pte_page));
-	// printk("free pte addr %lx\n", page_address(pte_page));
 	free_pt_pte_page((unsigned long)(page_address(pte_page)));
-	set_page_count(pte_page, 0);
 }
 
 static inline void pte_free_no_dtor(struct mm_struct *mm, struct page *pte_page)
@@ -94,14 +79,10 @@ static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
 
 	if (mm == &init_mm)
 		gfp = GFP_PGTABLE_KERNEL;
-	// page = alloc_pages(gfp, 0);
 	page = virt_to_page((void *)alloc_pt_pmd_page());
-	set_page_count(page, 2);
 	if (!page)
 		return NULL;
 	if (!pgtable_pmd_page_ctor(page)) {
-		// __free_pages(page, 0);
-		set_page_count(page, 0);
 		free_pt_pmd_page((unsigned long)(page_address(page)));
 		return NULL;
 	}
@@ -112,12 +93,10 @@ static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
 #ifndef __HAVE_ARCH_PMD_FREE
 static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
 {
-	BUG_ON((unsigned long)pmd & (PAGE_SIZE-1));
 	struct page *page = virt_to_page(pmd);
 	pgtable_pmd_page_dtor(page);
 	*(unsigned long *)&page->ptl = 0;
 	free_pt_pmd_page((unsigned long)pmd);
-	// free_page((unsigned long)pmd);
 }
 #endif
 
@@ -125,7 +104,6 @@ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
 static inline void pmd_free_no_dtor(struct mm_struct *mm, pmd_t *pmd)
 {
 	free_pt_pmd_page((unsigned long)pmd);
-	// free_page((unsigned long)pmd);
 }
 #endif
 
@@ -155,7 +133,6 @@ static inline void pud_free(struct mm_struct *mm, pud_t *pud)
 #ifndef __HAVE_ARCH_PGD_FREE
 static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
 {
-	// free_page((unsigned long)pgd);
 	free_pt_pgd_page((unsigned long)pgd);
 }
 #endif
