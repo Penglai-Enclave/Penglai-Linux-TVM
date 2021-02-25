@@ -44,13 +44,11 @@ static inline void pud_populate(struct mm_struct *mm, pud_t *pud, pmd_t *pmd)
 #endif /* __PAGETABLE_PMD_FOLDED */
 
 #define pmd_pgtable(pmd)	pmd_page(pmd)
-// extern int enclave_module_installed;
 #ifdef CONFIG_PT_AREA
 static inline pgd_t *pgd_alloc(struct mm_struct *mm)
 {
 	pgd_t *pgd;
 
-	// pgd = (pgd_t *)__get_free_page(GFP_KERNEL);
 	pgd = (pgd_t *)alloc_pt_pgd_page();
 	if(likely(pgd != NULL))
 	{

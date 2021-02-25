@@ -161,13 +161,12 @@ static inline int pmd_leaf(pmd_t pmd)
 	return pmd_present(pmd) &&
 	       (pmd_val(pmd) & (_PAGE_READ | _PAGE_WRITE | _PAGE_EXEC));
 }
-// extern int enclave_module_installed;
+
 static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
 {
 	#ifdef CONFIG_PT_AREA
 	if(enclave_module_installed)
 	{
-		//printk("set_pmd\n");
 		SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_ONE, __pa(pmdp), pmd.pmd, 0);
 	}
 	else
@@ -345,7 +344,6 @@ static inline void set_pte(pte_t *ptep, pte_t pteval)
 	#ifdef CONFIG_PT_AREA
 	if(enclave_module_installed)
 	{
-		//printk("set_pte\n");
 		SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_ONE, __pa(ptep), pteval.pte, 0);
 	}
 	else
@@ -411,7 +409,6 @@ static inline int ptep_test_and_clear_young(struct vm_area_struct *vma,
 {
 	if (!pte_young(*ptep))
 		return 0;
-	printk("ptep_test_and_clear_young\n");
 	return test_and_clear_bit(_PAGE_ACCESSED_OFFSET, &pte_val(*ptep));
 }
 
@@ -454,7 +451,6 @@ static inline int ptep_clear_flush_young(struct vm_area_struct *vma,
 	 * shouldn't really matter because there's no real memory
 	 * pressure for swapout to react to. ]
 	 */
-	printk("ptep_clear_flush_young\n");
 	return ptep_test_and_clear_young(vma, address, ptep);
 }
 
