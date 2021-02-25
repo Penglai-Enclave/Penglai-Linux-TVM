@@ -216,19 +216,10 @@ static void free_pte_range(struct mmu_gather *tlb, pmd_t *pmd,
 			   unsigned long addr)
 {
 	pgtable_t token = pmd_pgtable(*pmd);
-	#ifdef CONFIG_PT_AREA
-		pte_t *pte;
-		struct page *pte_page;
-		pte = pte_offset(pmd, addr);
-		pte_page = virt_to_page(pte); 
-		pte_free_no_dtor(NULL, pte_page);
-	#endif
+
 	pmd_clear(pmd);
 	pte_free_tlb(tlb, token, addr);
 	mm_dec_nr_ptes(tlb->mm);
-	#ifdef CONFIG_PT_AREA
-		*(unsigned long *)&pte_page->ptl = 0;
-	#endif
 }
 
 static inline void free_pmd_range(struct mmu_gather *tlb, pud_t *pud,

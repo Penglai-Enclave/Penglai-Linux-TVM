@@ -34,32 +34,28 @@ EXPORT_SYMBOL(pt_pte_free_list);
 
 spinlock_t pt_lock;
 EXPORT_SYMBOL(pt_lock);
+
 /* This function allocates a contionuous piece of memory for pt area.
- * PT area is used for storing page tables. After enclave is enabled,
- * any PTW that meets a page table page that does not lies in pt area
- * will incur a page fault.
+ * PT area is used for storing page tables.
  * This function can only be called after mm_init() is called
  */
 void init_pt_area()
 {
-  //initialize pt_pages
   //page: computing the number of the page table page 
   unsigned long pages = (_totalram_pages % PTRS_PER_PTE) ? (_totalram_pages/PTRS_PER_PTE + 1) : (_totalram_pages/PTRS_PER_PTE);
   unsigned long order = ilog2(pages - 1) + 4;
 
   unsigned long i = 0;
-  //align with the page size
   pt_area_pages = 1 << order;
   PTE_PAGE_NUM = pt_area_pages - (1<<PGD_PAGE_ORDER) - (1<<PMD_PAGE_ORDER);
-  //free pt_page in total
   pt_free_pages=pt_area_pages;
-  //allocate the the pt_area range 
   pt_area_vaddr = (void*)__get_free_pages(GFP_KERNEL, order);
   if(pt_area_vaddr == NULL)
   {
     panic("ERROR: init_pt_area: alloc pages for pt area failed!\n");
     while(1){}
   }
+
   //pages: computing the size of te page metadata space
   pages = pt_area_pages * sizeof(struct pt_page_list);
   pages = (pages % PAGE_SIZE) == 0 ? (pages / PAGE_SIZE) : (pages / PAGE_SIZE + 1);
@@ -93,7 +89,6 @@ void init_pt_area()
     pt_pte_free_list = &pt_pte_page_list[i];
   }
   printk("Init_pt_area: 0x%lx/0x%lx pt pages available!\n",pt_free_pages,pt_area_pages);
-
   spin_unlock(&pt_lock);
 }
 
@@ -191,22 +186,16 @@ char* alloc_pt_pte_page()
 
 int free_pt_pgd_page(unsigned long page)
 {
-  /* In this function, it is hard to check whether the page belong to pt area,
-   * because it is hard to know what is the paddr of char* page if char* page
-   * does not lie in linear mapped virtual space.
-   * It is OK to leave it unchecked as the hardware PTW will check whether the
-   * page table lies in pt area.
-   */
   unsigned long pt_page_num;
 
   if(((unsigned long)page % PAGE_SIZE)!=0){
-    pr_warn("ERROR: free_pt_pgd_page: page is not PAGE_SIZE aligned!\n");
+    panic("ERROR: free_pt_pgd_page: page is not PAGE_SIZE aligned!\n");
     return -1; 
   }
   pt_page_num = ((char*)page - pt_area_vaddr) / PAGE_SIZE;
-  if(pt_page_num >= pt_area_pages)
+  if(pt_page_num >= (1<<PGD_PAGE_ORDER))
   {
-    pr_warn("ERROR: free_pt_pgd_page: page is not in pt_area!\n");
+    panic("ERROR: free_pt_pgd_page: page is not in pt_area!\n");
     return -1;
   }
 
@@ -217,6 +206,7 @@ int free_pt_pgd_page(unsigned long page)
   pt_free_pages += 1;
 
   spin_unlock(&pt_lock);
+
   return  0;
 }
 
@@ -225,13 +215,13 @@ int free_pt_pmd_page(unsigned long page)
   unsigned long pt_page_num;
 
   if(((unsigned long)page % PAGE_SIZE)!=0){
-    pr_warn("ERROR: free_pt_pmd_page: page is not PAGE_SIZE aligned!\n");
+    panic("ERROR: free_pt_pmd_page: page is not PAGE_SIZE aligned!\n");
     return -1; 
   }
   pt_page_num = (((char*)page - pt_area_vaddr) / PAGE_SIZE) - (1<<PGD_PAGE_ORDER);
-  if(pt_page_num >= pt_area_pages)
+  if(pt_page_num >= (1<<PMD_PAGE_ORDER))
   {
-    pr_warn("ERROR: free_pt_pmd_page: page is not in pt_area!\n");
+    panic("ERROR: free_pt_pmd_page: page is not in pt_area!\n");
     return -1;
   }
 
@@ -242,6 +232,7 @@ int free_pt_pmd_page(unsigned long page)
   pt_free_pages += 1;
 
   spin_unlock(&pt_lock);
+
   return  0;
 }
 
@@ -249,20 +240,34 @@ int free_pt_pte_page(unsigned long page)
 {
   unsigned long pt_page_num;
   if(((unsigned long)page % PAGE_SIZE)!=0){
-    pr_warn("ERROR: free_pt_pte_page: page is not PAGE_SIZE aligned!\n");
+    panic("ERROR: free_pt_pte_page: page is not PAGE_SIZE aligned!\n");
     return -1; 
   }
   pt_page_num = (((char*)page - pt_area_vaddr) / PAGE_SIZE) - (1<<PGD_PAGE_ORDER) - (1<<PMD_PAGE_ORDER);
-  if(pt_page_num >= pt_area_pages)
+  if(pt_page_num >= (pt_area_pages - (1<<PGD_PAGE_ORDER) - (1<<PMD_PAGE_ORDER)))
   {
-    pr_warn("ERROR: free_pt_pte_page: page is not in pt_area!\n");
+    panic("ERROR: free_pt_pte_page: page is not in pt_area! %lx\n", page);
     return -1;
   }
 
   spin_lock(&pt_lock);
+
   pt_pte_page_list[pt_page_num].next_page = pt_pte_free_list;
   pt_pte_free_list = &pt_pte_page_list[pt_page_num];
   pt_free_pages += 1;
+
   spin_unlock(&pt_lock);
+
+  return  0;
+}
+
+int check_pt_pte_page(unsigned long page)
+{
+  unsigned long pt_page_num;
+  pt_page_num = (((char*)page - pt_area_vaddr) / PAGE_SIZE) - (1<<PGD_PAGE_ORDER) - (1<<PMD_PAGE_ORDER);
+  if(pt_page_num >= (pt_area_pages - (1<<PGD_PAGE_ORDER) - (1<<PMD_PAGE_ORDER)))
+  {
+    return -1;
+  }
   return  0;
 }

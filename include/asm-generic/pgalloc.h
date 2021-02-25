@@ -66,7 +66,13 @@ static inline void pte_free(struct mm_struct *mm, struct page *pte_page)
 
 static inline void pte_free_no_dtor(struct mm_struct *mm, struct page *pte_page)
 {
+	*(unsigned long *)&pte_page->ptl = 0;
 	free_pt_pte_page((unsigned long)(page_address(pte_page)));
+}
+
+static inline int check_pte(struct mm_struct *mm, struct page *pte_page)
+{
+	return check_pt_pte_page((unsigned long)(page_address(pte_page)));
 }
 
 #if CONFIG_PGTABLE_LEVELS > 2

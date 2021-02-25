@@ -20,4 +20,6 @@ int free_pt_pgd_page(unsigned long page);
 int free_pt_pmd_page(unsigned long page);
 
 int free_pt_pte_page(unsigned long page);
+
+int check_pt_pte_page(unsigned long page);
 #endif /* _LINUX_PT_AREA_H */
