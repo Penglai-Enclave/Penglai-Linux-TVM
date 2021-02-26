@@ -684,6 +684,7 @@ noinline void __ref rest_init(void)
 {
 	struct task_struct *tsk;
 	int pid;
+
 	rcu_scheduler_starting();
 	/*
 	 * We need to spawn init first so that it obtains pid 1, however
@@ -700,11 +701,13 @@ noinline void __ref rest_init(void)
 	tsk = find_task_by_pid_ns(pid, &init_pid_ns);
 	set_cpus_allowed_ptr(tsk, cpumask_of(smp_processor_id()));
 	rcu_read_unlock();
+
 	numa_default_policy();
 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
 	rcu_read_lock();
 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
 	rcu_read_unlock();
+
 	/*
 	 * Enable might_sleep() and smp_processor_id() checks.
 	 * They cannot be enabled earlier because with CONFIG_PREEMPTION=y
@@ -713,6 +716,7 @@ noinline void __ref rest_init(void)
 	 * already, but it's stuck on the kthreadd_done completion.
 	 */
 	system_state = SYSTEM_SCHEDULING;
+
 	complete(&kthreadd_done);
 
 	/*
@@ -926,6 +930,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 {
 	char *command_line;
 	char *after_dashes;
+
 	set_task_stack_end_magic(&init_task);
 	smp_setup_processor_id();
 	debug_objects_early_init();
@@ -951,6 +956,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	boot_cpu_hotplug_init();
 	build_all_zonelists(NULL);
 	page_alloc_init();
+
 	pr_notice("Kernel command line: %s\n", saved_command_line);
 	/* parameters may set static keys */
 	jump_label_init();
@@ -965,6 +971,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	if (extra_init_args)
 		parse_args("Setting extra init args", extra_init_args,
 			   NULL, 0, -1, -1, NULL, set_init_arg);
+
 	/*
 	 * These use large bootmem allocations and must precede
 	 * kmem_cache_init()
@@ -982,6 +989,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 
 	/* trace_printk can be enabled here */
 	early_trace_init();
+
 	/*
 	 * Set up the scheduler prior starting any interrupts (such as the
 	 * timer interrupt). Full topology setup happens at smp_init()
@@ -1042,6 +1050,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	add_latent_entropy();
 	add_device_randomness(command_line, strlen(command_line));
 	boot_init_stack_canary();
+
 	time_init();
 	perf_event_init();
 	profile_init();
@@ -1089,7 +1098,6 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 		initrd_start = 0;
 	}
 #endif
-
 	setup_per_cpu_pageset();
 	numa_policy_init();
 	acpi_early_init();
@@ -1099,7 +1107,6 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	calibrate_delay();
 	pid_idr_init();
 	anon_vma_init();
-
 #ifdef CONFIG_X86
 	if (efi_enabled(EFI_RUNTIME_SERVICES))
 		efi_enter_virtual_mode();
@@ -1131,6 +1138,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	arch_post_acpi_subsys_init();
 	sfi_init_late();
 	kcsan_init();
+	
 	/* Do the rest non-__init'ed, we're now alive */
 	arch_call_rest_init();
 

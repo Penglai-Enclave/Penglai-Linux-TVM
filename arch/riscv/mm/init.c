@@ -213,7 +213,7 @@ pgd_t *new_swapper_pg_dir;
 #endif
 pte_t fixmap_pte[PTRS_PER_PTE] __page_aligned_bss;
 
-#define MAX_EARLY_MAPPING_SIZE	SZ_256M
+#define MAX_EARLY_MAPPING_SIZE	SZ_128M
 
 pgd_t early_pg_dir[PTRS_PER_PGD] __initdata __aligned(PAGE_SIZE);
 
@@ -445,11 +445,13 @@ asmlinkage void __init setup_vm(uintptr_t dtb_pa)
 
 	va_pa_offset = PAGE_OFFSET - load_pa;
 	pfn_base = PFN_DOWN(load_pa);
+
 	/*
 	 * Enforce boot alignment requirements of RV32 and
 	 * RV64 by only allowing PMD or PGD mappings.
 	 */
 	BUG_ON(map_size == PAGE_SIZE);
+
 	/* Sanity check alignment and size */
 	BUG_ON((PAGE_OFFSET % PGDIR_SIZE) != 0);
 	BUG_ON((load_pa % map_size) != 0);
@@ -464,6 +466,7 @@ asmlinkage void __init setup_vm(uintptr_t dtb_pa)
 	/* Setup early PGD for fixmap */
 	create_pgd_mapping(early_pg_dir, FIXADDR_START,
 			   (uintptr_t)fixmap_pgd_next, PGDIR_SIZE, PAGE_TABLE);
+
 #ifndef __PAGETABLE_PMD_FOLDED
 	/* Setup fixmap PMD */
 	create_pmd_mapping(fixmap_pmd, FIXADDR_START,
@@ -489,6 +492,7 @@ asmlinkage void __init setup_vm(uintptr_t dtb_pa)
 		create_pgd_mapping(early_pg_dir, va,
 				   load_pa + (va - PAGE_OFFSET),
 				   map_size, PAGE_KERNEL_EXEC);
+				   
 #ifndef __PAGETABLE_PMD_FOLDED
 	/* Setup early PMD for DTB */
 	create_pgd_mapping(early_pg_dir, DTB_EARLY_BASE_VA,
