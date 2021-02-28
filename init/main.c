@@ -934,6 +934,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	set_task_stack_end_magic(&init_task);
 	smp_setup_processor_id();
 	debug_objects_early_init();
+
 	cgroup_init_early();
 
 	local_irq_disable();
@@ -954,6 +955,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	setup_per_cpu_areas();
 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
 	boot_cpu_hotplug_init();
+
 	build_all_zonelists(NULL);
 	page_alloc_init();
 
@@ -981,6 +983,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	sort_main_extable();
 	trap_init();
 	mm_init();
+
 	#ifdef CONFIG_PT_AREA
 	init_pt_area();
 	transfer_init_pt();
@@ -1138,7 +1141,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	arch_post_acpi_subsys_init();
 	sfi_init_late();
 	kcsan_init();
-	
+
 	/* Do the rest non-__init'ed, we're now alive */
 	arch_call_rest_init();
 

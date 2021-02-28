@@ -403,6 +403,7 @@ void __init create_pgd_mapping(pgd_t *pgdp,
 		next_phys = PFN_PHYS(_pgd_pfn(pgdp[pgd_idx]));
 		nextp = get_pgd_next_virt(next_phys);
 	}
+
 	create_pgd_next_mapping(nextp, va, pa, sz, prot);
 }
 
@@ -492,7 +493,7 @@ asmlinkage void __init setup_vm(uintptr_t dtb_pa)
 		create_pgd_mapping(early_pg_dir, va,
 				   load_pa + (va - PAGE_OFFSET),
 				   map_size, PAGE_KERNEL_EXEC);
-				   
+
 #ifndef __PAGETABLE_PMD_FOLDED
 	/* Setup early PMD for DTB */
 	create_pgd_mapping(early_pg_dir, DTB_EARLY_BASE_VA,
@@ -551,6 +552,7 @@ static void __init setup_vm_final(void)
 	uintptr_t va, map_size;
 	phys_addr_t pa, start, end;
 	u64 i;
+
 	/**
 	 * MMU is enabled at this point. But page table setup is not complete yet.
 	 * fixmap page table alloc functions should be used at this point
@@ -565,6 +567,7 @@ static void __init setup_vm_final(void)
 	create_pgd_mapping(swapper_pg_dir, FIXADDR_START,
 			   __pa_symbol(fixmap_pgd_next),
 			   PGDIR_SIZE, PAGE_TABLE);
+
 	/* Map all memory banks */
 	for_each_mem_range(i, &start, &end) {
 		if (start >= end)
@@ -572,6 +575,7 @@ static void __init setup_vm_final(void)
 		if (start <= __pa(PAGE_OFFSET) &&
 		    __pa(PAGE_OFFSET) < end)
 			start = __pa(PAGE_OFFSET);
+
 		map_size = best_map_size(start, end - start);
 		for (pa = start; pa < end; pa += map_size) {
 			va = (uintptr_t)__va(pa);
@@ -579,9 +583,11 @@ static void __init setup_vm_final(void)
 					   map_size, PAGE_KERNEL_EXEC);
 		}
 	}
+
 	/* Clear fixmap PTE and PMD mappings */
 	clear_fixmap(FIX_PTE);
 	clear_fixmap(FIX_PMD);
+
 	/* Move to swapper page table */
 	csr_write(CSR_SATP, PFN_DOWN(__pa_symbol(swapper_pg_dir)) | SATP_MODE);
 	local_flush_tlb_all();

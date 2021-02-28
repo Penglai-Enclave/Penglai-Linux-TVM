@@ -263,7 +263,7 @@ clear_bss_done:
 	mv s1, a1
 	la a2, boot_cpu_hartid
 	REG_S a0, (a2)
-	
+
 	/* Initialize page tables and relocate to virtual addresses */
 	la sp, init_thread_union + THREAD_SIZE
 	mv a0, s1
@@ -272,7 +272,7 @@ clear_bss_done:
 	la a0, early_pg_dir
 	call relocate
 #endif /* CONFIG_MMU */
-	
+
 	call setup_trap_vector
 	/* Restore C environment */
 	la tp, init_task
