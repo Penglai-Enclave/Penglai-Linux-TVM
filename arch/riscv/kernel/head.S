@@ -241,6 +241,7 @@ pmp_done:
 	tail .Lsecondary_park
 .Lgood_cores:
 #endif
+
 	/* Pick one hart to run the main boot sequence */
 	la a3, hart_lottery
 	li a2, 1
@@ -262,16 +263,16 @@ clear_bss_done:
 	mv s1, a1
 	la a2, boot_cpu_hartid
 	REG_S a0, (a2)
+
 	/* Initialize page tables and relocate to virtual addresses */
 	la sp, init_thread_union + THREAD_SIZE
 	mv a0, s1
 	call setup_vm
-	ecall
 #ifdef CONFIG_MMU
 	la a0, early_pg_dir
 	call relocate
 #endif /* CONFIG_MMU */
-	ecall
+
 	call setup_trap_vector
 	/* Restore C environment */
 	la tp, init_task

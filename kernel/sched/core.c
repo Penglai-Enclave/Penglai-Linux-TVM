@@ -1876,6 +1876,7 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
 	struct rq_flags rf;
 	struct rq *rq;
 	int ret = 0;
+
 	rq = task_rq_lock(p, &rf);
 	update_rq_clock(rq);
 
@@ -1885,6 +1886,7 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
 		 */
 		cpu_valid_mask = cpu_online_mask;
 	}
+
 	/*
 	 * Must re-check here, to close a race against __kthread_bind(),
 	 * sched_setaffinity() is not guaranteed to observe the flag.
@@ -1893,8 +1895,10 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
 		ret = -EINVAL;
 		goto out;
 	}
+
 	if (cpumask_equal(&p->cpus_mask, new_mask))
 		goto out;
+
 	/*
 	 * Picking a ~random cpu helps in cases where we are changing affinity
 	 * for groups of tasks (ie. cpuset), so that load balancing is not
@@ -1917,6 +1921,7 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
 			!cpumask_intersects(new_mask, cpu_active_mask) &&
 			p->nr_cpus_allowed != 1);
 	}
+	
 	/* Can the task run on the task's current CPU? If so, we're done */
 	if (cpumask_test_cpu(task_cpu(p), new_mask))
 		goto out;

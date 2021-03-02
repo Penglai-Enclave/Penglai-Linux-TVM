@@ -98,26 +98,12 @@ struct sbiret sbi_ecall(int ext, int fid, unsigned long arg0,
 			unsigned long arg3, unsigned long arg4,
 			unsigned long arg5);
 
-#define SBI_PENGLAI_0( fid) SBI_PENGLAI_ECALL_0( fid)
-#define SBI_PENGLAI_1( fid, arg0) SBI_PENGLAI_ECALL_1( fid, arg0)
-#define SBI_PENGLAI_2( fid, arg0, arg1) SBI_PENGLAI_ECALL_2( fid, arg0, arg1)
-#define SBI_PENGLAI_3( fid, arg0, arg1, arg2) SBI_PENGLAI_ECALL_3( fid, arg0, arg1, arg2)
-#define SBI_PENGLAI_4( fid, arg0, arg1, arg2, arg3) SBI_PENGLAI_ECALL_4( fid, arg0, arg1, arg2, arg3)
-#define SBI_PENGLAI_5( fid, arg0, arg1, arg2, arg3, arg4) SBI_PENGLAI_ECALL_5( fid, arg0, arg1, arg2, arg3, arg4)
-
 long SBI_PENGLAI_ECALL_0(int fid);
 long SBI_PENGLAI_ECALL_1(int fid, unsigned long arg0);
 long SBI_PENGLAI_ECALL_2(int fid, unsigned long arg0, unsigned long arg1);
 long SBI_PENGLAI_ECALL_3(int fid, unsigned long arg0, unsigned long arg1, unsigned long arg2);
 long SBI_PENGLAI_ECALL_4(int fid, unsigned long arg0, unsigned long arg1, unsigned long arg2, unsigned long arg3);
 long SBI_PENGLAI_ECALL_5(int fid, unsigned long arg0, unsigned long arg1, unsigned long arg2, unsigned long arg3, unsigned long arg4);
-
-// EXPORT_SYMBOL(SBI_PENGLAI_ECALL_0);
-// EXPORT_SYMBOL(SBI_PENGLAI_ECALL_1);
-// EXPORT_SYMBOL(SBI_PENGLAI_ECALL_2);
-// EXPORT_SYMBOL(SBI_PENGLAI_ECALL_3);
-// EXPORT_SYMBOL(SBI_PENGLAI_ECALL_4);
-// EXPORT_SYMBOL(SBI_PENGLAI_ECALL_5);
 
 void sbi_console_putchar(int ch);
 int sbi_console_getchar(void);
