@@ -5735,7 +5735,8 @@ static void workqueue_sysfs_unregister(struct workqueue_struct *wq)	{ }
  */
 #ifdef CONFIG_WQ_WATCHDOG
 
-static unsigned long wq_watchdog_thresh = 30;
+// Penglai
+static unsigned long wq_watchdog_thresh = 300;
 static struct timer_list wq_watchdog_timer;
 
 static unsigned long wq_watchdog_touched = INITIAL_JIFFIES;

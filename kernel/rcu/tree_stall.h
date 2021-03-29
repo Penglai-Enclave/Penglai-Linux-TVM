@@ -482,7 +482,8 @@ static void print_other_cpu_stall(unsigned long gp_seq, unsigned long gps)
 	 * See Documentation/RCU/stallwarn.rst for info on how to debug
 	 * RCU CPU stall warnings.
 	 */
-	pr_err("INFO: %s detected stalls on CPUs/tasks:\n", rcu_state.name);
+	//Penglai
+	// pr_err("INFO: %s detected stalls on CPUs/tasks:\n", rcu_state.name);
 	rcu_for_each_leaf_node(rnp) {
 		raw_spin_lock_irqsave_rcu_node(rnp, flags);
 		if (rnp->qsmask != 0) {
@@ -497,9 +498,9 @@ static void print_other_cpu_stall(unsigned long gp_seq, unsigned long gps)
 
 	for_each_possible_cpu(cpu)
 		totqlen += rcu_get_n_cbs_cpu(cpu);
-	pr_cont("\t(detected by %d, t=%ld jiffies, g=%ld, q=%lu)\n",
-	       smp_processor_id(), (long)(jiffies - gps),
-	       (long)rcu_seq_current(&rcu_state.gp_seq), totqlen);
+	// pr_cont("\t(detected by %d, t=%ld jiffies, g=%ld, q=%lu)\n",
+	//        smp_processor_id(), (long)(jiffies - gps),
+	//        (long)rcu_seq_current(&rcu_state.gp_seq), totqlen);
 	if (ndetected) {
 		rcu_dump_cpu_stacks();
 
@@ -508,14 +509,14 @@ static void print_other_cpu_stall(unsigned long gp_seq, unsigned long gps)
 			rcu_print_detail_task_stall_rnp(rnp);
 	} else {
 		if (rcu_seq_current(&rcu_state.gp_seq) != gp_seq) {
-			pr_err("INFO: Stall ended before state dump start\n");
+			// pr_err("INFO: Stall ended before state dump start\n");
 		} else {
 			j = jiffies;
 			gpa = data_race(rcu_state.gp_activity);
-			pr_err("All QSes seen, last %s kthread activity %ld (%ld-%ld), jiffies_till_next_fqs=%ld, root ->qsmask %#lx\n",
-			       rcu_state.name, j - gpa, j, gpa,
-			       data_race(jiffies_till_next_fqs),
-			       rcu_get_root()->qsmask);
+			// pr_err("All QSes seen, last %s kthread activity %ld (%ld-%ld), jiffies_till_next_fqs=%ld, root ->qsmask %#lx\n",
+			//        rcu_state.name, j - gpa, j, gpa,
+			//        data_race(jiffies_till_next_fqs),
+			//        rcu_get_root()->qsmask);
 		}
 	}
 	/* Rewrite if needed in case of slow consoles. */
