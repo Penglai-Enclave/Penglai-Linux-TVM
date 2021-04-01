@@ -43,7 +43,7 @@ void init_pt_area()
 {
   //page: computing the number of the page table page 
   unsigned long pages = (_totalram_pages % PTRS_PER_PTE) ? (_totalram_pages/PTRS_PER_PTE + 1) : (_totalram_pages/PTRS_PER_PTE);
-  unsigned long order = ilog2(pages - 1) + 4;
+  unsigned long order = ilog2(pages - 1) + 1;
 
   unsigned long i = 0;
   pt_area_pages = 1 << order;

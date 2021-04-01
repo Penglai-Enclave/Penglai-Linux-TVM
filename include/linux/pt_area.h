@@ -1,7 +1,7 @@
 #ifndef _LINUX_PT_AREA_H
 #define _LINUX_PT_AREA_H
-#define DEFAULT_PGD_PAGE_ORDER 8
-#define DEFAULT_PMD_PAGE_ORDER 10
+#define DEFAULT_PGD_PAGE_ORDER 5
+#define DEFAULT_PMD_PAGE_ORDER 7
 
 void init_pt_area(void);
 
