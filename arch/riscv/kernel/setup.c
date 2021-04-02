@@ -54,9 +54,12 @@ static DEFINE_PER_CPU(struct cpu, cpu_devices);
 static void __init parse_dtb(void)
 {
 	/* Early scan of device tree from init memory */
+	strlcpy(boot_command_line, CONFIG_CMDLINE, COMMAND_LINE_SIZE);
 	if (early_init_dt_scan(dtb_early_va))
+	{
+		strlcpy(boot_command_line, CONFIG_CMDLINE, COMMAND_LINE_SIZE);
 		return;
-
+	}
 	pr_err("No DTB passed to the kernel\n");
 #ifdef CONFIG_CMDLINE_FORCE
 	strlcpy(boot_command_line, CONFIG_CMDLINE, COMMAND_LINE_SIZE);
@@ -87,12 +90,12 @@ struct console riscv_sbi_early_console_dev __initdata = {
 
 void __init setup_arch(char **cmdline_p)
 {
-#if defined(CONFIG_EARLY_PRINTK)
-       if (likely(early_console == NULL)) {
-               early_console = &riscv_sbi_early_console_dev;
-               register_console(early_console);
-       }
-#endif
+// #if defined(CONFIG_EARLY_PRINTK)
+//        if (likely(early_console == NULL)) {
+//                early_console = &riscv_sbi_early_console_dev;
+//                register_console(early_console);
+//        }
+// #endif
 	parse_dtb();
 	init_mm.start_code = (unsigned long) _stext;
 	init_mm.end_code   = (unsigned long) _etext;
