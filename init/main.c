@@ -886,6 +886,7 @@ static void deep_copy_pt(pte_t* src_pt, pte_t* dest_pt, int level)
  * This function can only be called after init_pt_area is called
  */
 int enclave_module_installed = 0;
+EXPORT_SYMBOL(enclave_module_installed);
 extern unsigned long pt_area_vaddr;
 extern unsigned long pt_area_pages;
 static void transfer_init_pt(void)
@@ -916,7 +917,7 @@ static void transfer_init_pt(void)
   {
     swapper_pg_dir[i].pgd=0;
   }
-  enclave_module_installed = 1;
+  enclave_module_installed = 0;
 }
 
 #endif /* CONFIG_PT_AREA */
