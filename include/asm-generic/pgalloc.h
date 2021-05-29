@@ -39,8 +39,11 @@ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
 static inline pgtable_t __pte_alloc_one(struct mm_struct *mm, gfp_t gfp)
 {
 	struct page *pte;
+	char *pt_pte_addr = alloc_pt_pte_page();
+	if (pt_pte_addr == NULL)
+		return NULL;
 
-	pte = virt_to_page((void*)(alloc_pt_pte_page()));
+	pte = virt_to_page((void*)(pt_pte_addr));
 	if (!pte)
 		return NULL;
 	if (!pgtable_pte_page_ctor(pte)) {
@@ -85,7 +88,12 @@ static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
 
 	if (mm == &init_mm)
 		gfp = GFP_PGTABLE_KERNEL;
-	page = virt_to_page((void *)alloc_pt_pmd_page());
+
+	char *pt_pmd_addr = alloc_pt_pmd_page();
+	if (pt_pmd_addr == NULL)
+		return NULL;
+
+	page = virt_to_page((void *)pt_pmd_addr);
 	if (!page)
 		return NULL;
 	if (!pgtable_pmd_page_ctor(page)) {
