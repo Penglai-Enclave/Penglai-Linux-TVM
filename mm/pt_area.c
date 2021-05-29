@@ -2,6 +2,7 @@
 #include <asm/pgtable.h>
 #include <linux/gfp.h>
 #include <linux/pt_area.h>
+#include <linux/mm.h>
 
 int PGD_PAGE_ORDER=DEFAULT_PGD_PAGE_ORDER;
 int PMD_PAGE_ORDER=DEFAULT_PMD_PAGE_ORDER;
@@ -17,7 +18,7 @@ EXPORT_SYMBOL(PGD_PAGE_ORDER);
 EXPORT_SYMBOL(PMD_PAGE_ORDER);
 EXPORT_SYMBOL(alloc_pt_pte_page);
 
-extern unsigned long _totalram_pages;
+// extern unsigned long _totalram_pages;
 
 struct pt_page_list{
   struct pt_page_list *next_page;
@@ -41,8 +42,9 @@ EXPORT_SYMBOL(pt_lock);
  */
 void init_pt_area()
 {
-  //page: computing the number of the page table page 
-  unsigned long pages = (_totalram_pages % PTRS_PER_PTE) ? (_totalram_pages/PTRS_PER_PTE + 1) : (_totalram_pages/PTRS_PER_PTE);
+  //page: computing the number of the page table page
+  unsigned long local_totalram_pages = totalram_pages();
+  unsigned long pages = (local_totalram_pages % PTRS_PER_PTE) ? (local_totalram_pages/PTRS_PER_PTE + 1) : (local_totalram_pages/PTRS_PER_PTE);
   unsigned long order = ilog2(pages - 1) + 1;
 
   unsigned long i = 0;
@@ -108,9 +110,11 @@ char* alloc_pt_pgd_page()
   char* free_page;
   spin_lock(&pt_lock);
 
-  if(pt_pgd_free_list == NULL){
-    panic("PANIC: there is no free page in PT area for pgd!\n");
-    while(1){}
+  while (pt_pgd_free_list== NULL){
+    printk("alloc_pt_pgd_page: no more page for PGDs\n");
+    pagefault_out_of_memory();
+    spin_unlock(&pt_lock);
+    return NULL;
   }
 
   pt_page_num = (pt_pgd_free_list - pt_pgd_page_list);
@@ -136,9 +140,12 @@ char* alloc_pt_pmd_page()
   unsigned long pt_page_num;
   char* free_page;
   spin_lock(&pt_lock);
-  if(pt_pmd_free_list == NULL){
-    panic("PANIC: there is no free page in PT area for pmd!\n");
-    while(1){}
+  while (pt_pmd_free_list == NULL){
+
+    printk("alloc_pt_pmd_page: no more page for PMDs\n");
+    pagefault_out_of_memory();
+    spin_unlock(&pt_lock);
+    return NULL;
   }
   pt_page_num = (pt_pmd_free_list - pt_pmd_page_list);
   //need free_page offset
@@ -163,9 +170,11 @@ char* alloc_pt_pte_page()
   char* free_page;
   spin_lock(&pt_lock);
 
-  if(pt_pte_free_list == NULL){
-    panic("PANIC: there is no free page in PT area for pte!\n");
-    while(1){}
+  while (pt_pte_free_list == NULL){
+    printk("alloc_pt_pte_page: no more page for PTEs\n");
+    pagefault_out_of_memory();
+    spin_unlock(&pt_lock);
+    return NULL;
   }
   pt_page_num = (pt_pte_free_list - pt_pte_page_list);
   //need free_page offset
@@ -239,6 +248,7 @@ int free_pt_pmd_page(unsigned long page)
 int free_pt_pte_page(unsigned long page)
 {
   unsigned long pt_page_num;
+
   if(((unsigned long)page % PAGE_SIZE)!=0){
     panic("ERROR: free_pt_pte_page: page is not PAGE_SIZE aligned!\n");
     return -1; 
