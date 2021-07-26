@@ -19,6 +19,7 @@
 #include <asm/tlbflush.h>
 #include <linux/mm_types.h>
 #include <asm/sbi.h>
+#include <linux/kernel.h>
 
 #ifdef CONFIG_MMU
 
@@ -334,6 +335,7 @@ static inline int pte_same(pte_t pte_a, pte_t pte_b)
 	return pte_val(pte_a) == pte_val(pte_b);
 }
 
+
 /*
  * Certain architectures need to do special things when PTEs within
  * a page table are directly modified.  Thus, the following hook is
@@ -342,8 +344,11 @@ static inline int pte_same(pte_t pte_a, pte_t pte_b)
 static inline void set_pte(pte_t *ptep, pte_t pteval)
 {
 	#ifdef CONFIG_PT_AREA
+
 	if(enclave_module_installed)
 	{
+		printk("set_pte\n");
+		dump_stack();
 		SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_ONE, __pa(ptep), pteval.pte, 0);
 	}
 	else
@@ -364,11 +369,32 @@ static inline void set_pte_at(struct mm_struct *mm,
 	set_pte(ptep, pteval);
 }
 
+#ifdef CONFIG_PT_AREA_BATCH
+static inline void delay_set_pte_at(struct mm_struct *mm,
+	unsigned long addr, pte_t *ptep, pte_t pteval)
+{
+	if (pte_present(pteval) && pte_exec(pteval))
+		flush_icache_pte(pteval);
+
+	// set_pte(ptep, pteval);
+}
+#endif
+
 static inline void pte_clear(struct mm_struct *mm,
 	unsigned long addr, pte_t *ptep)
 {
 	set_pte_at(mm, addr, ptep, __pte(0));
 }
+
+// delay pte set operation
+#ifdef  CONFIG_PT_AREA_BATCH
+static inline void delay_pte_clear(struct mm_struct *mm,
+	unsigned long addr, pte_t *ptep)
+{
+	if (pte_present(__pte(0)) && pte_exec(__pte(0)))
+		flush_icache_pte(__pte(0));
+}
+#endif
 
 #define __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
 static inline int ptep_set_access_flags(struct vm_area_struct *vma,

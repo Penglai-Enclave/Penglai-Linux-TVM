@@ -1807,7 +1807,6 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
 		if (!page)
 			continue;
 		gather_stats(page, md, pte_dirty(*pte), 1);
-
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 	pte_unmap_unlock(orig_pte, ptl);
 	cond_resched();

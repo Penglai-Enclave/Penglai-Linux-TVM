@@ -2884,7 +2884,7 @@ void filemap_map_pages(struct vm_fault *vmf,
 		if (vmf->pte)
 			vmf->pte += xas.xa_index - last_pgoff;
 		last_pgoff = xas.xa_index;
-		if (alloc_set_pte(vmf, page))
+		if (alloc_noset_pte(vmf, page))
 			goto unlock;
 		unlock_page(head);
 		goto next;
@@ -2897,6 +2897,7 @@ next:
 		if (pmd_trans_huge(*vmf->pmd))
 			break;
 	}
+	flush_pt_area_set_buffer();
 	rcu_read_unlock();
 	WRITE_ONCE(file->f_ra.mmap_miss, mmap_miss);
 }
