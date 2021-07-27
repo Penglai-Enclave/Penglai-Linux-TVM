@@ -347,8 +347,8 @@ static inline void set_pte(pte_t *ptep, pte_t pteval)
 
 	if(enclave_module_installed)
 	{
-		printk("set_pte\n");
-		dump_stack();
+		// printk("set_pte\n");
+		// dump_stack();
 		SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_ONE, __pa(ptep), pteval.pte, 0);
 	}
 	else
@@ -447,7 +447,7 @@ static inline void ptep_set_wrprotect(struct mm_struct *mm,
 	{
 		pte_t pteval;
 		pteval.pte = (~(unsigned long)_PAGE_WRITE) & (ptep->pte);
-		printk("ptep_set_wrprotect\n");
+		// printk("ptep_set_wrprotect\n");
 		// dump_stack();
 		SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_ONE, __pa(ptep), pteval.pte, 0);
 	}
