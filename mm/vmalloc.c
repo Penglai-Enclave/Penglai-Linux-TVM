@@ -78,7 +78,7 @@ static void vunmap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
 	do {
 		pte_t ptent = ptep_get_and_clear(&init_mm, addr, pte);
 		WARN_ON(!pte_none(ptent) && !pte_present(ptent));
-		printk("vmalloc/vunmap_pte_range\n");
+		// printk("vmalloc/vunmap_pte_range\n");
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 	*mask |= PGTBL_PTE_MODIFIED;
 }
@@ -213,7 +213,7 @@ static int vmap_pte_range(pmd_t *pmd, unsigned long addr,
 			return -ENOMEM;
 		set_pte_at(&init_mm, addr, pte, mk_pte(page, prot));
 		(*nr)++;
-		printk("vmalloc/vmap_pte_range\n");
+		// printk("vmalloc/vmap_pte_range\n");
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 	*mask |= PGTBL_PTE_MODIFIED;
 	return 0;

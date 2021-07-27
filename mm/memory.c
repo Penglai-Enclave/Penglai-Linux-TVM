@@ -688,7 +688,6 @@ out:
 	return pfn_to_page(pfn);
 }
 #endif
-
 /*
  * copy one vm_area from one task to the other. Assumes the page tables
  * already present in the new task to be cleared in the whole range
@@ -773,6 +772,7 @@ copy_nonpresent_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
 	return 0;
 }
 
+
 /*
  * Copy a present and normal page if necessary.
  *
@@ -844,6 +844,100 @@ copy_present_page(struct vm_area_struct *dst_vma, struct vm_area_struct *src_vma
 	return 0;
 }
 
+#ifdef CONFIG_PT_AREA_BATCH
+#define SBI_SM_SET_PTE 101
+#define SBI_SET_PTE_ONE 1
+#define SBI_PTE_MEMSET 2
+#define SBI_PTE_MEMCPY 3
+#define SBI_SET_PTE_BATCH_ZERO 4
+#define SBI_SET_PTE_BATCH_SET  5
+
+#define PT_AREA_BATCH_SIZE 512
+static struct pt_area_batch_t pt_area_set_batch2[PT_AREA_BATCH_SIZE + 1] = {0};
+static int pt_area_set_index2 = 0;
+extern int enclave_module_installed;
+#include <asm/page.h>
+void flush_pt_area_set_buffer2(void)
+{
+	SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_BATCH_SET, __pa(&(pt_area_set_batch2[1])), pt_area_set_index2, 0);
+	memset(pt_area_set_batch2, 0 , (pt_area_set_index2+1) * sizeof(struct pt_area_batch_t));
+	pt_area_set_index2 = 0;
+}
+/*
+ * Copy one pte.  Returns 0 if succeeded, or -EAGAIN if one preallocated page
+ * is required to copy this pte.
+ */
+static inline int
+copy_noset_present_pte(struct vm_area_struct *dst_vma, struct vm_area_struct *src_vma,
+		 pte_t *dst_pte, pte_t *src_pte, unsigned long addr, int *rss,
+		 struct page **prealloc)
+{
+	struct mm_struct *src_mm = src_vma->vm_mm;
+	unsigned long vm_flags = src_vma->vm_flags;
+	pte_t pte = *src_pte;
+	struct page *page;
+
+	page = vm_normal_page(src_vma, addr, pte);
+	if (page) {
+		int retval;
+
+		retval = copy_present_page(dst_vma, src_vma, dst_pte, src_pte,
+					   addr, rss, prealloc, pte, page);
+		if (retval <= 0)
+			return retval;
+
+		get_page(page);
+		page_dup_rmap(page, false);
+		rss[mm_counter(page)]++;
+	}
+
+	/*
+	 * If it's a COW mapping, write protect it both
+	 * in the parent and the child
+	 */
+	if (is_cow_mapping(vm_flags) && pte_write(pte)) {
+		ptep_set_wrprotect(src_mm, addr, src_pte);
+		pte = pte_wrprotect(pte);
+	}
+
+	/*
+	 * If it's a shared mapping, mark it clean in
+	 * the child
+	 */
+	if (vm_flags & VM_SHARED)
+		pte = pte_mkclean(pte);
+	pte = pte_mkold(pte);
+
+	/*
+	 * Make sure the _PAGE_UFFD_WP bit is cleared if the new VMA
+	 * does not have the VM_UFFD_WP, which means that the uffd
+	 * fork event is not enabled.
+	 */
+	if (!(vm_flags & VM_UFFD_WP))
+		pte = pte_clear_uffd_wp(pte);
+
+	if(enclave_module_installed)
+	{
+		// if ptep is not contiguous with the last ptep, allocate a new struct of pt_area_batch
+		if (pt_area_set_index2 == PT_AREA_BATCH_SIZE)
+		{
+			SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_BATCH_SET, __pa(&(pt_area_set_batch2[1])), pt_area_set_index2, 0);
+			memset(pt_area_set_batch2, 0 , (pt_area_set_index2+1) * sizeof(struct pt_area_batch_t));
+			pt_area_set_index2 = 0;
+		}
+	
+		pt_area_set_index2++;
+		pt_area_set_batch2[pt_area_set_index2].ptep_base = __pa(dst_pte);
+		pt_area_set_batch2[pt_area_set_index2].entity.ptep_entry = pte.pte;
+		delay_set_pte_at(dst_vma->vm_mm, addr, dst_pte, pte);
+	}
+	else
+		set_pte_at(dst_vma->vm_mm, addr, dst_pte, pte);
+	// set_pte_at(dst_vma->vm_mm, addr, dst_pte, pte);
+	return 0;
+}
+
+#endif
 /*
  * Copy one pte.  Returns 0 if succeeded, or -EAGAIN if one preallocated page
  * is required to copy this pte.
@@ -976,8 +1070,17 @@ again:
 			continue;
 		}
 		/* copy_present_pte() will clear `*prealloc' if consumed */
+		#ifdef CONFIG_PT_AREA_BATCH
+		if(enclave_module_installed)
+			ret = copy_noset_present_pte(dst_vma, src_vma, dst_pte, src_pte,
+				       addr, rss, &prealloc);
+		else
+			ret = copy_present_pte(dst_vma, src_vma, dst_pte, src_pte,
+				       addr, rss, &prealloc);
+		#else
 		ret = copy_present_pte(dst_vma, src_vma, dst_pte, src_pte,
 				       addr, rss, &prealloc);
+		#endif
 		/*
 		 * If we need a pre-allocated page for this pte, drop the
 		 * locks, allocate, and try again.
@@ -996,6 +1099,11 @@ again:
 		}
 		progress += 8;
 	} while (dst_pte++, src_pte++, addr += PAGE_SIZE, addr != end);
+
+	#ifdef CONFIG_PT_AREA_BATCH
+	if(enclave_module_installed)
+		flush_pt_area_set_buffer2();
+	#endif
 
 	arch_leave_lazy_mmu_mode();
 	spin_unlock(src_ptl);
@@ -1194,16 +1302,6 @@ copy_page_range(struct vm_area_struct *dst_vma, struct vm_area_struct *src_vma)
 }
 
 #ifdef CONFIG_PT_AREA_BATCH
-extern int enclave_module_installed;
-#include <asm/page.h>
-#define SBI_SM_SET_PTE 101
-#define SBI_SET_PTE_ONE 1
-#define SBI_PTE_MEMSET 2
-#define SBI_PTE_MEMCPY 3
-#define SBI_SET_PTE_BATCH_ZERO 4
-#define SBI_SET_PTE_BATCH_SET  5
-
-#define PT_AREA_BATCH_SIZE 512
 static struct pt_area_batch_t pt_area_batch[PT_AREA_BATCH_SIZE + 1] = {0};
 static int pt_area_index = 0;
 #endif
@@ -2224,7 +2322,7 @@ static int remap_pte_range(struct mm_struct *mm, pmd_t *pmd,
 		}
 		set_pte_at(mm, addr, pte, pte_mkspecial(pfn_pte(pfn, prot)));
 		pfn++;
-		printk("memory/pte_remap_here\n");
+		// printk("memory/pte_remap_here\n");
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 	arch_leave_lazy_mmu_mode();
 	pte_unmap_unlock(pte - 1, ptl);
