@@ -919,7 +919,7 @@ copy_noset_present_pte(struct vm_area_struct *dst_vma, struct vm_area_struct *sr
 	if(enclave_module_installed)
 	{
 		// if ptep is not contiguous with the last ptep, allocate a new struct of pt_area_batch
-		if (pt_area_set_index2 == PT_AREA_BATCH_SIZE)
+		if (unlikely(pt_area_set_index2 == PT_AREA_BATCH_SIZE))
 		{
 			SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_BATCH_SET, __pa(&(pt_area_set_batch2[1])), pt_area_set_index2, 0);
 			memset(pt_area_set_batch2, 0 , (pt_area_set_index2+1) * sizeof(struct pt_area_batch_t));
@@ -1353,7 +1353,7 @@ again:
 			if(enclave_module_installed)
 			{
 				// if ptep is not contiguous with the last ptep, allocate a new struct of pt_area_batch
-				if (pt_area_index == PT_AREA_BATCH_SIZE)
+				if (unlikely(pt_area_index == PT_AREA_BATCH_SIZE))
 				{
 					SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_BATCH_ZERO, __pa(&(pt_area_batch[1])), pt_area_index, 0);
 					memset(pt_area_batch, 0 , (pt_area_index+1) * sizeof(struct pt_area_batch_t));
@@ -3991,7 +3991,7 @@ vm_fault_t alloc_noset_pte(struct vm_fault *vmf, struct page *page)
 	if(enclave_module_installed)
 	{
 		// if ptep is not contiguous with the last ptep, allocate a new struct of pt_area_batch
-		if (pt_area_set_index == PT_AREA_BATCH_SIZE)
+		if (unlikely(pt_area_set_index == PT_AREA_BATCH_SIZE))
 		{
 			SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_BATCH_SET, __pa(&(pt_area_set_batch[1])), pt_area_set_index, 0);
 			memset(pt_area_set_batch, 0 , (pt_area_set_index+1) * sizeof(struct pt_area_batch_t));

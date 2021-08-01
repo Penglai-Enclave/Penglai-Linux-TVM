@@ -95,7 +95,7 @@ static void vunmap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
 		if(enclave_module_installed)
 		{
 			// if ptep is not contiguous with the last ptep, allocate a new struct of pt_area_batch
-			if (pt_area_index == PT_AREA_BATCH_SIZE)
+			if (unlikely(pt_area_index == PT_AREA_BATCH_SIZE))
 			{
 				SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_BATCH_ZERO, __pa(&(pt_area_batch[1])), pt_area_index, 0);
 				memset(pt_area_batch, 0 , (pt_area_index+1) * sizeof(struct pt_area_batch_t));
@@ -273,7 +273,7 @@ static int vmap_pte_range(pmd_t *pmd, unsigned long addr,
 		if(enclave_module_installed)
 		{
 			// if ptep is not contiguous with the last ptep, allocate a new struct of pt_area_batch
-			if (pt_area_set_index == PT_AREA_BATCH_SIZE)
+			if (unlikely(pt_area_set_index == PT_AREA_BATCH_SIZE))
 			{
 				SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_BATCH_SET, __pa(&(pt_area_set_batch[1])), pt_area_set_index, 0);
 				memset(pt_area_set_batch, 0 , (pt_area_set_index+1) * sizeof(struct pt_area_batch_t));
