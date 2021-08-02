@@ -248,6 +248,16 @@ static inline int pmdp_clear_flush_young(struct vm_area_struct *vma,
 #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
 #endif
 
+#ifdef CONFIG_PT_AREA_BATCH
+struct pt_area_batch_t {
+	unsigned long ptep_base;
+	union {
+		unsigned long ptep_size;
+		unsigned long ptep_entry;
+	} entity;
+};
+#endif
+
 #ifndef __HAVE_ARCH_PTEP_GET_AND_CLEAR
 static inline pte_t ptep_get_and_clear(struct mm_struct *mm,
 				       unsigned long address,
@@ -255,6 +265,18 @@ static inline pte_t ptep_get_and_clear(struct mm_struct *mm,
 {
 	pte_t pte = *ptep;
 	pte_clear(mm, address, ptep);
+	return pte;
+}
+
+#endif
+
+#ifdef CONFIG_PT_AREA_BATCH
+static inline pte_t delay2_ptep_get_and_clear(struct mm_struct *mm,
+				       unsigned long address,
+				       pte_t *ptep)
+{
+	pte_t pte = *ptep;
+	delay_pte_clear(mm, address, ptep);
 	return pte;
 }
 #endif
@@ -319,6 +341,18 @@ static inline pte_t ptep_get_and_clear_full(struct mm_struct *mm,
 	pte = ptep_get_and_clear(mm, address, ptep);
 	return pte;
 }
+
+#ifdef CONFIG_PT_AREA_BATCH
+static inline pte_t delay_ptep_get_and_clear_full(struct mm_struct *mm,
+					    unsigned long address, pte_t *ptep,
+					    int full)
+{
+	pte_t pte;
+	pte = delay2_ptep_get_and_clear(mm, address, ptep);
+	return pte;
+}
+#endif
+
 #endif
 
 

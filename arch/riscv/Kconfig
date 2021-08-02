@@ -111,8 +111,14 @@ config RISCV_SBI
 	depends on !RISCV_M_MODE
 	default y
 
+# set if we enable PT_AREA for penglai enclave
 config PT_AREA
   	bool 
+	default y
+
+config PT_AREA_BATCH
+  	bool
+	depends on PT_AREA
 	default y
 
 config EARLY_PRINTK
