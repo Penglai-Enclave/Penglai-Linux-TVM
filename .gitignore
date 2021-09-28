@@ -155,3 +155,5 @@ x509.genkey
 
 # Documentation toolchain
 sphinx_*/
+
+!0001-patch-v2.patch
