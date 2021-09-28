@@ -119,7 +119,7 @@ config PT_AREA
 config PT_AREA_BATCH
   	bool
 	depends on PT_AREA
-	default n
+	default y
 
 config EARLY_PRINTK
   	bool 
