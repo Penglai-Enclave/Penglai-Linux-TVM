@@ -101,10 +101,10 @@ static void vunmap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
 				memset(pt_area_batch, 0 , (pt_area_index+1) * sizeof(struct pt_area_batch_t));
 				pt_area_index = 0;
 			}
-			if (pt_area_batch[pt_area_index].ptep_base + pt_area_batch[pt_area_index].entity.ptep_size !=__pa(addr))
+			if (pt_area_batch[pt_area_index].ptep_base + pt_area_batch[pt_area_index].entity.ptep_size !=__pa(pte))
 			{
 				pt_area_index++;
-				pt_area_batch[pt_area_index].ptep_base = __pa(addr);
+				pt_area_batch[pt_area_index].ptep_base = __pa(pte);
 				pt_area_batch[pt_area_index].entity.ptep_size = sizeof(pte_t);
 			}
 			else
