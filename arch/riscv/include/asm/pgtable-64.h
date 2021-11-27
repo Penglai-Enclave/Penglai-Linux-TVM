@@ -7,7 +7,6 @@
 #define _ASM_RISCV_PGTABLE_64_H
 
 #include <linux/const.h>
-#include <asm/sbi.h>
 
 #define PGDIR_SHIFT     30
 /* Size of region mapped by a page global directory */
@@ -51,30 +50,10 @@ static inline int pud_leaf(pud_t pud)
 	       (pud_val(pud) & (_PAGE_READ | _PAGE_WRITE | _PAGE_EXEC));
 }
 
-#ifdef CONFIG_PT_AREA
-extern int enclave_module_installed;
-#define SBI_SM_SET_PTE 101
-#define SBI_SET_PTE_ONE 1
-#define SBI_PTE_MEMSET 2
-#define SBI_PTE_MEMCPY 3
-
-static void set_pud(pud_t *pudp, pud_t pud)
-{
-  if(enclave_module_installed)
-  {
-    SBI_PENGLAI_ECALL_4(SBI_SM_SET_PTE, SBI_SET_PTE_ONE, __pa(pudp), pud.p4d.pgd.pgd, 0);
-  }
-  else
-  {
-    *pudp = pud;
-  }
-}
-#else
 static inline void set_pud(pud_t *pudp, pud_t pud)
 {
 	*pudp = pud;
 }
-#endif /*CONFIG_PT_AREA*/
 
 static inline void pud_clear(pud_t *pudp)
 {

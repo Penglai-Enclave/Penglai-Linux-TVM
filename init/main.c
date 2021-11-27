@@ -105,13 +105,6 @@
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
 
-#ifdef CONFIG_PT_AREA
-#include <linux/pt_area.h>
-#include <asm/tlbflush.h>
-#include <asm/page.h>
-#endif
-
-
 #define CREATE_TRACE_POINTS
 #include <trace/events/initcall.h>
 
@@ -847,81 +840,6 @@ static void __init mm_init(void)
 	pti_init();
 }
 
-#ifdef CONFIG_PT_AREA
-static void deep_copy_pt(pte_t* src_pt, pte_t* dest_pt, int level)
-{
-  unsigned long i=0;
-  int tmpLevel = level;
-  for(i=0;i<PTRS_PER_PGD;++i)
-  {
-    unsigned long pte=src_pt[i].pte;
-    if(pte & _PAGE_PRESENT)
-    {
-      if((pte & _PAGE_READ) || (pte & _PAGE_EXEC))
-      {
-        //Find a leaf PTE
-        dest_pt[i]=__pte(pte);
-      }
-      else
-      {
-        pte_t* new_dest_pt;
-        pte_t* new_src_pt;
-		if (tmpLevel == 0){
-			new_dest_pt=(pte_t*)alloc_pt_pmd_page();
-		}
-		else{
-			new_dest_pt=(pte_t*)alloc_pt_pte_page();
-		}
-		new_src_pt=(pte_t*)pfn_to_virt(pte>>_PAGE_PFN_SHIFT);
-        deep_copy_pt(new_src_pt, new_dest_pt,level+1);
-        src_pt[i]=pfn_pte(PFN_DOWN(__pa(new_dest_pt)), __pgprot(pte & 0x3FF));
-        dest_pt[i]=pfn_pte(PFN_DOWN(__pa(new_dest_pt)), __pgprot(pte & 0x3FF));
-      }
-    }
-  }
-}
-
-/*
- * Transfer the swapper pg dir that kernel uses during boot to pt area
- * This function can only be called after init_pt_area is called
- */
-int enclave_module_installed = 0;
-EXPORT_SYMBOL(enclave_module_installed);
-extern unsigned long pt_area_vaddr;
-extern unsigned long pt_area_pages;
-static void transfer_init_pt(void)
-{
-  pte_t* new_swapper_pt;
-  unsigned long i=0;
-  pr_notice("Transfer init table\n");
-#ifndef __PAGETABLE_PMD_FOLDED
-  BUG_ON((PTRS_PER_PGD != PTRS_PER_PTE) || (PTRS_PER_PTE != PTRS_PER_PMD));
-#else
-  BUG_ON(PTRS_PER_PGD != PTRS_PER_PTE);
-#endif
-
-  //Actually here should be pgd_t or pmd_t or pte_t, just for simplicity
-  new_swapper_pt=(pte_t*)alloc_pt_pgd_page();
-  new_swapper_pg_dir=(void*)__pa(new_swapper_pt);
-  deep_copy_pt((pte_t*)swapper_pg_dir, new_swapper_pt,0);
-  mb();
-
-  pr_notice("Before transfer init table: sptbr is 0x%lx, init_mm.pgd is 0x%lx\n",csr_read(sptbr),(unsigned long)init_mm.pgd);
-  init_mm.pgd=(pgd_t*)new_swapper_pt;
-  csr_write(sptbr, virt_to_pfn(new_swapper_pt) | SATP_MODE);
-  local_flush_tlb_all();
-  pr_notice("After transfer init table: sptbr is 0x%lx, init_mm.pgd is 0x%lx\n",csr_read(sptbr),(unsigned long)init_mm.pgd);
-  
-  //clear swapper_pg_dir
-  for(i=0;i<PTRS_PER_PGD;++i)
-  {
-    swapper_pg_dir[i].pgd=0;
-  }
-  enclave_module_installed = 0;
-}
-
-#endif /* CONFIG_PT_AREA */
-
 void __init __weak arch_call_rest_init(void)
 {
 	rest_init();
@@ -985,10 +903,6 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	trap_init();
 	mm_init();
 
-	#ifdef CONFIG_PT_AREA
-	init_pt_area();
-	transfer_init_pt();
-	#endif
 	ftrace_init();
 
 	/* trace_printk can be enabled here */

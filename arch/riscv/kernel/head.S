@@ -155,12 +155,7 @@ secondary_start_common:
 
 #ifdef CONFIG_MMU
 	/* Enable virtual memory and relocate to virtual address */
-	#ifdef CONFIG_PT_AREA
-		la a0, new_swapper_pg_dir
-		ld a0, (a0)
-	#else
-		la a0, swapper_pg_dir
-	#endif
+	la a0, swapper_pg_dir
 	call relocate
 #endif
 	call setup_trap_vector

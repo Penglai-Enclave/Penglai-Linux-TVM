@@ -46,67 +46,6 @@ struct sbiret sbi_ecall(int ext, int fid, unsigned long arg0,
 }
 EXPORT_SYMBOL(sbi_ecall);
 
-long SBI_PENGLAI_ECALL_0(int fid)
-{
-	struct sbiret ret;
-	ret = sbi_ecall(SBI_EXT_PENGLAI, fid, 0, 0, 0, 0, 0, 0);
-	if (ret.error == 0)
-		return ret.value;
-	return ret.error;
-}
-
-long SBI_PENGLAI_ECALL_1(int fid, unsigned long arg0)
-{
-	struct sbiret ret;
-	ret = sbi_ecall(SBI_EXT_PENGLAI, fid, arg0, 0, 0, 0, 0, 0);
-	if (ret.error == 0)
-		return ret.value;
-	return ret.error;
-}
-
-long SBI_PENGLAI_ECALL_2(int fid, unsigned long arg0, unsigned long arg1)
-{
-	struct sbiret ret;
-	ret = sbi_ecall(SBI_EXT_PENGLAI, fid, arg0, arg1, 0, 0, 0, 0);
-	if (ret.error == 0)
-		return ret.value;
-	return ret.error;
-}
-
-long SBI_PENGLAI_ECALL_3(int fid, unsigned long arg0, unsigned long arg1, unsigned long arg2)
-{
-	struct sbiret ret;
-	ret = sbi_ecall(SBI_EXT_PENGLAI, fid, arg0, arg1, arg2, 0, 0, 0);
-	if (ret.error == 0)
-		return ret.value;
-	return ret.error;
-}
-
-long SBI_PENGLAI_ECALL_4(int fid, unsigned long arg0, unsigned long arg1, unsigned long arg2, unsigned long arg3)
-{
-	struct sbiret ret;
-	ret = sbi_ecall(SBI_EXT_PENGLAI, fid, arg0, arg1, arg2, arg3, 0, 0);
-	if (ret.error == 0)
-		return ret.value;
-	return ret.error;
-}
-
-long SBI_PENGLAI_ECALL_5(int fid, unsigned long arg0, unsigned long arg1, unsigned long arg2, unsigned long arg3, unsigned long arg4)
-{
-	struct sbiret ret;
-	ret = sbi_ecall(SBI_EXT_PENGLAI, fid, arg0, arg1, arg2, arg3, arg4, 0);
-	if (ret.error == 0)
-		return ret.value;
-	return ret.error;
-}
-
-EXPORT_SYMBOL(SBI_PENGLAI_ECALL_0);
-EXPORT_SYMBOL(SBI_PENGLAI_ECALL_1);
-EXPORT_SYMBOL(SBI_PENGLAI_ECALL_2);
-EXPORT_SYMBOL(SBI_PENGLAI_ECALL_3);
-EXPORT_SYMBOL(SBI_PENGLAI_ECALL_4);
-EXPORT_SYMBOL(SBI_PENGLAI_ECALL_5);
-
 int sbi_err_map_linux_errno(int err)
 {
 	switch (err) {

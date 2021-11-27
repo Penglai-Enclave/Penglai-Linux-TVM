@@ -52,7 +52,7 @@
 #include <trace/events/oom.h>
 
 int sysctl_panic_on_oom;
-int sysctl_oom_kill_allocating_task = 1;
+int sysctl_oom_kill_allocating_task;
 int sysctl_oom_dump_tasks = 1;
 
 /*
@@ -1088,19 +1088,10 @@ bool out_of_memory(struct oom_control *oc)
 		oc->nodemask = NULL;
 	check_panic_on_oom(oc);
 
-	// if (!is_memcg_oom(oc) && sysctl_oom_kill_allocating_task &&
-	//     current->mm && !oom_unkillable_task(current) &&
-	//     oom_cpuset_eligible(current, oc) &&
-	//     current->signal->oom_score_adj != OOM_SCORE_ADJ_MIN) {
-	// 	get_task_struct(current);
-	// 	oc->chosen = current;
-	// 	oom_kill_process(oc, "Out of memory (oom_kill_allocating_task)");
-	// 	return true;
-	// }
-
 	if (!is_memcg_oom(oc) && sysctl_oom_kill_allocating_task &&
 	    current->mm && !oom_unkillable_task(current) &&
-	    oom_cpuset_eligible(current, oc)) {
+	    oom_cpuset_eligible(current, oc) &&
+	    current->signal->oom_score_adj != OOM_SCORE_ADJ_MIN) {
 		get_task_struct(current);
 		oc->chosen = current;
 		oom_kill_process(oc, "Out of memory (oom_kill_allocating_task)");
@@ -1149,4 +1140,3 @@ void pagefault_out_of_memory(void)
 	out_of_memory(&oc);
 	mutex_unlock(&oom_lock);
 }
-EXPORT_SYMBOL(pagefault_out_of_memory);

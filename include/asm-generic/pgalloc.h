@@ -2,158 +2,10 @@
 #ifndef __ASM_GENERIC_PGALLOC_H
 #define __ASM_GENERIC_PGALLOC_H
 
-#ifdef CONFIG_PT_AREA
-#include <linux/pt_area.h>
-#include <asm/atomic.h>
-#endif
-
 #ifdef CONFIG_MMU
 
 #define GFP_PGTABLE_KERNEL	(GFP_KERNEL | __GFP_ZERO)
 #define GFP_PGTABLE_USER	(GFP_PGTABLE_KERNEL | __GFP_ACCOUNT)
-
-#ifdef CONFIG_PT_AREA
-
-static inline pte_t *__pte_alloc_one_kernel(struct mm_struct *mm)
-{
-	pte_t* pte;
-	pte = (pte_t*) alloc_pt_pte_page();
-	return pte;
-}
-
-#ifndef __HAVE_ARCH_PTE_ALLOC_ONE_KERNEL
-static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm)
-{
-	return __pte_alloc_one_kernel(mm);
-}
-#endif
-
-
-
-
-static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-{
-	free_pt_pte_page((unsigned long)pte);
-}
-
-static inline pgtable_t __pte_alloc_one(struct mm_struct *mm, gfp_t gfp)
-{
-	struct page *pte;
-	char *pt_pte_addr = alloc_pt_pte_page();
-	if (pt_pte_addr == NULL)
-		return NULL;
-
-	pte = virt_to_page((void*)(pt_pte_addr));
-	if (!pte)
-		return NULL;
-	if (!pgtable_pte_page_ctor(pte)) {
-		free_pt_pte_page((unsigned long)(page_address(pte)));
-		return NULL;
-	}
-	return pte;
-}
-
-#ifndef __HAVE_ARCH_PTE_ALLOC_ONE
-static inline pgtable_t pte_alloc_one(struct mm_struct *mm)
-{
-	return __pte_alloc_one(mm, GFP_PGTABLE_USER);
-}
-#endif
-
-static inline void pte_free(struct mm_struct *mm, struct page *pte_page)
-{
-	pgtable_pte_page_dtor(pte_page);
-	*(unsigned long *)&pte_page->ptl = 0;
-	free_pt_pte_page((unsigned long)(page_address(pte_page)));
-}
-
-static inline void pte_free_no_dtor(struct mm_struct *mm, struct page *pte_page)
-{
-	*(unsigned long *)&pte_page->ptl = 0;
-	free_pt_pte_page((unsigned long)(page_address(pte_page)));
-}
-
-static inline int check_pte(struct mm_struct *mm, struct page *pte_page)
-{
-	return check_pt_pte_page((unsigned long)(page_address(pte_page)));
-}
-
-#if CONFIG_PGTABLE_LEVELS > 2
-
-#ifndef __HAVE_ARCH_PMD_ALLOC_ONE
-static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
-{
-	struct page *page;
-	gfp_t gfp = GFP_PGTABLE_USER;
-
-	if (mm == &init_mm)
-		gfp = GFP_PGTABLE_KERNEL;
-
-	char *pt_pmd_addr = alloc_pt_pmd_page();
-	if (pt_pmd_addr == NULL)
-		return NULL;
-
-	page = virt_to_page((void *)pt_pmd_addr);
-	if (!page)
-		return NULL;
-	if (!pgtable_pmd_page_ctor(page)) {
-		free_pt_pmd_page((unsigned long)(page_address(page)));
-		return NULL;
-	}
-	return (pmd_t *)page_address(page);
-}
-#endif
-
-#ifndef __HAVE_ARCH_PMD_FREE
-static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
-{
-	struct page *page = virt_to_page(pmd);
-	pgtable_pmd_page_dtor(page);
-	*(unsigned long *)&page->ptl = 0;
-	free_pt_pmd_page((unsigned long)pmd);
-}
-#endif
-
-#ifndef __HAVE_ARCH_PMD_FREE
-static inline void pmd_free_no_dtor(struct mm_struct *mm, pmd_t *pmd)
-{
-	free_pt_pmd_page((unsigned long)pmd);
-}
-#endif
-
-#endif /* CONFIG_PGTABLE_LEVELS > 2 */
-
-#if CONFIG_PGTABLE_LEVELS > 3
-
-#ifndef __HAVE_ARCH_PUD_ALLOC_ONE
-static inline pud_t *pud_alloc_one(struct mm_struct *mm, unsigned long addr)
-{
-	gfp_t gfp = GFP_PGTABLE_USER;
-
-	if (mm == &init_mm)
-		gfp = GFP_PGTABLE_KERNEL;
-	return (pud_t *)get_zeroed_page(gfp);
-}
-#endif
-
-static inline void pud_free(struct mm_struct *mm, pud_t *pud)
-{
-	BUG_ON((unsigned long)pud & (PAGE_SIZE-1));
-	free_page((unsigned long)pud);
-}
-
-#endif /* CONFIG_PGTABLE_LEVELS > 3 */
-
-#ifndef __HAVE_ARCH_PGD_FREE
-static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-{
-	free_pt_pgd_page((unsigned long)pgd);
-}
-#endif
-
-
-
-#else
 
 /**
  * __pte_alloc_one_kernel - allocate a page for PTE-level kernel page table
@@ -329,8 +181,6 @@ static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
 	free_page((unsigned long)pgd);
 }
 #endif
-
-#endif /* CONFIG_PT_AREA */
 
 #endif /* CONFIG_MMU */
 
