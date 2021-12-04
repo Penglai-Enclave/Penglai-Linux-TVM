@@ -52,6 +52,7 @@ void init_pt_area()
   PTE_PAGE_NUM = pt_area_pages - (1<<PGD_PAGE_ORDER) - (1<<PMD_PAGE_ORDER);
   pt_free_pages=pt_area_pages;
   pt_area_vaddr = (void*)__get_free_pages(GFP_KERNEL, order);
+  memset(pt_area_vaddr, 0, (1<<order)*PAGE_SIZE); 
   if(pt_area_vaddr == NULL)
   {
     panic("ERROR: init_pt_area: alloc pages for pt area failed!\n");
@@ -66,6 +67,9 @@ void init_pt_area()
   pt_pgd_page_list = (struct pt_page_list* )__get_free_pages(GFP_KERNEL, order);
   pt_pmd_page_list = (struct pt_page_list* )__get_free_pages(GFP_KERNEL, order);
   pt_pte_page_list = (struct pt_page_list* )__get_free_pages(GFP_KERNEL, order);
+  memset(pt_pgd_page_list, 0, (1<<order)*PAGE_SIZE);
+  memset(pt_pmd_page_list, 0, (1<<order)*PAGE_SIZE);
+  memset(pt_pte_page_list, 0, (1<<order)*PAGE_SIZE);
   if((pt_pgd_page_list == NULL) || (pt_pmd_page_list == NULL) || (pt_pte_page_list == NULL))
   {
     panic("ERROR: init_pt_area: alloc pages for pt_pgd_pmd_pte_page_list failed!\n");
